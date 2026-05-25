@@ -1,0 +1,28 @@
+{
+  "name": "gateway",
+  "version": "1.0.0",
+  "description": "API Gateway — JWT verification, header injection, reverse proxy",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
+    "http-proxy-middleware": "^3.0.0",
+    "zod": "^3.23.6"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.12.12",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

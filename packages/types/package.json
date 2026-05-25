@@ -1,0 +1,13 @@
+{
+  "name": "@app/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for all services",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

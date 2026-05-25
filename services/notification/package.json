@@ -1,0 +1,31 @@
+{
+  "name": "notification",
+  "version": "1.0.0",
+  "description": "Notification service — RabbitMQ/SQS consumer, email dispatch",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@app/types": "file:../../packages/types",
+    "amqplib": "^0.10.4",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.30.10",
+    "pg": "^8.11.5",
+    "resend": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.5",
+    "@types/node": "^20.12.12",
+    "@types/pg": "^8.11.6",
+    "drizzle-kit": "^0.21.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
