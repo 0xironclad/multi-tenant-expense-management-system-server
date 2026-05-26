@@ -31,6 +31,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       res.status(409).json({ error: 'Email already in use' });
       return;
     }
+    console.error('Register error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
