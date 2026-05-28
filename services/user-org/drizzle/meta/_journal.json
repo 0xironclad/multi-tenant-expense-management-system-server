@@ -8,6 +8,13 @@
       "when": 1779814901247,
       "tag": "0000_bouncy_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779967767445,
+      "tag": "0001_nappy_silver_surfer",
+      "breakpoints": true
     }
   ]
 }
