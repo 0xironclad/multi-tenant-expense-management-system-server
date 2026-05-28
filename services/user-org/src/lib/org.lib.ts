@@ -49,3 +49,11 @@ export const isMember = async (orgId: string, userId: string): Promise<boolean> 
     .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, userId)));
   return !!membership;
 };
+
+export const getUserRoleInOrganisation = async (orgId: string, userId: string): Promise<string | null> => {
+  const [membership] = await db
+    .select()
+    .from(memberships)
+    .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, userId)));
+  return membership ? membership.role : null;
+};
