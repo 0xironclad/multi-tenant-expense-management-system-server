@@ -24,6 +24,24 @@ export const findOrganisationById = async (orgId: string) => {
   return org ?? null;
 };
 
+export const getMembersWithProfiles = async (orgId: string) => {
+  return db
+    .select({
+      membershipId: memberships.id,
+      role: memberships.role,
+      joinedAt: memberships.createdAt,
+      profile: {
+        id: userProfiles.id,
+        firstName: userProfiles.firstName,
+        lastName: userProfiles.lastName,
+        email: userProfiles.email,
+      },
+    })
+    .from(memberships)
+    .innerJoin(userProfiles, eq(memberships.userId, userProfiles.id))
+    .where(eq(memberships.orgId, orgId));
+};
+
 export const isMember = async (orgId: string, userId: string): Promise<boolean> => {
   const [membership] = await db
     .select()
