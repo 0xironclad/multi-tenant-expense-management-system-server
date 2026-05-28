@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "memberships_org_id_idx" ON "memberships" ("org_id");
