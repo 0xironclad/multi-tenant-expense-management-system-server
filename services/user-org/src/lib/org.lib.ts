@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { Role } from '@app/types';
 import { db, userProfiles, memberships, organisations } from '../db';
 
@@ -28,7 +28,6 @@ export const isMember = async (orgId: string, userId: string): Promise<boolean> 
   const [membership] = await db
     .select()
     .from(memberships)
-    .where(eq(memberships.orgId, orgId))
-    .where(eq(memberships.userId, userId));
+    .where(and(eq(memberships.orgId, orgId), eq(memberships.userId, userId)));
   return !!membership;
 };
