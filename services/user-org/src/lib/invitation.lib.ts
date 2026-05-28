@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull, gt } from 'drizzle-orm';
 import { db, invitations, memberships, userProfiles } from '../db';
 
 export const createInvitation = async (
@@ -56,6 +56,21 @@ export const acceptInvitation = async (token: string, authUserId: string) => {
 
     return membership;
   });
+};
+
+export const hasPendingInvitation = async (orgId: string, email: string): Promise<boolean> => {
+  const [existing] = await db
+    .select()
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.orgId, orgId),
+        eq(invitations.email, email),
+        isNull(invitations.acceptedAt),
+        gt(invitations.expiresAt, new Date()),
+      ),
+    );
+  return !!existing;
 };
 
 export const isAlreadyMember = async (orgId: string, email: string): Promise<boolean> => {

@@ -11,9 +11,15 @@ export enum ExpenseStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum EventType {
+  EXPENSE_APPROVED = 'EXPENSE_APPROVED',
+  EXPENSE_REJECTED = 'EXPENSE_REJECTED',
+  USER_INVITED = 'USER_INVITED',
+}
+
 export type ExpenseApprovedEvent = {
   eventId: string;
-  type: 'EXPENSE_APPROVED';
+  type: EventType.EXPENSE_APPROVED;
   expenseId: string;
   submittedBy: string;
   orgId: string;
@@ -24,7 +30,7 @@ export type ExpenseApprovedEvent = {
 
 export type ExpenseRejectedEvent = {
   eventId: string;
-  type: 'EXPENSE_REJECTED';
+  type: EventType.EXPENSE_REJECTED;
   expenseId: string;
   submittedBy: string;
   orgId: string;
@@ -34,7 +40,7 @@ export type ExpenseRejectedEvent = {
 
 export type UserInvitedEvent = {
   eventId: string;
-  type: 'USER_INVITED';
+  type: EventType.USER_INVITED;
   email: string;
   orgId: string;
   orgName: string;
