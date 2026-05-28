@@ -1,8 +1,11 @@
 import { Router } from 'express';
-import { inviteToOrganisation } from '../controllers/invitation.controller';
+import { inviteToOrganisation, getInvitationByToken, acceptInvitation } from '../controllers/invitation.controller';
 
-const router = Router({ mergeParams: true });
+const orgInvitationRouter = Router({ mergeParams: true });
+orgInvitationRouter.post('/', inviteToOrganisation);
 
-router.post('/', inviteToOrganisation);
+const invitationRouter = Router();
+invitationRouter.get('/:token', getInvitationByToken);
+invitationRouter.post('/:token/accept', acceptInvitation);
 
-export default router;
+export { orgInvitationRouter, invitationRouter };
