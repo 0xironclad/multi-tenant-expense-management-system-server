@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { createProfileSchema } from '../schemas/user.schemas';
-import { findProfileByAuthUserId, createProfile } from '../lib/user.lib';
+import { findProfileByAuthUserId, createProfile, getMembershipsWithOrgs } from '../lib/user.lib';
 
 export const createUserProfile = async (req: Request, res: Response): Promise<void> => {
   const authUserId = req.headers['x-user-id'] as string;
@@ -33,3 +33,27 @@ export const createUserProfile = async (req: Request, res: Response): Promise<vo
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+export const getMyProfile = async (req: Request, res: Response): Promise<void> => {
+  const authUserId = req.headers['x-user-id'] as string;
+
+  if (!authUserId) {
+    res.status(401).json({ error: 'Missing identity header' });
+    return;
+  }
+
+  try {
+    const profile = await findProfileByAuthUserId(authUserId);
+    if (!profile) {
+      res.status(404).json({ error: 'Profile not found' });
+      return;
+    }
+
+    const memberships = await getMembershipsWithOrgs(profile.id);
+    res.status(200).json({ ...profile, memberships });
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
