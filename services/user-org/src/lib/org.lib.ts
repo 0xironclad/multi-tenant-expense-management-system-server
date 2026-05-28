@@ -1,0 +1,34 @@
+import { eq } from 'drizzle-orm';
+import { Role } from '@app/types';
+import { db, userProfiles, memberships, organisations } from '../db';
+
+export const createOrganisation = async (name: string, slug: string, authUserId: string) => {
+  return db.transaction(async (tx) => {
+    const [org] = await tx.insert(organisations).values({ name, slug }).returning();
+
+    const [profile] = await tx.select().from(userProfiles).where(eq(userProfiles.authUserId, authUserId));
+    if (!profile) throw new Error('Profile not found for authUserId: ' + authUserId);
+
+    await tx.insert(memberships).values({
+      userId: profile.id,
+      orgId: org.id,
+      role: Role.OWNER,
+    });
+
+    return org;
+  });
+};
+
+export const findOrganisationById = async (orgId: string) => {
+  const [org] = await db.select().from(organisations).where(eq(organisations.id, orgId));
+  return org ?? null;
+};
+
+export const isMember = async (orgId: string, userId: string): Promise<boolean> => {
+  const [membership] = await db
+    .select()
+    .from(memberships)
+    .where(eq(memberships.orgId, orgId))
+    .where(eq(memberships.userId, userId));
+  return !!membership;
+};
