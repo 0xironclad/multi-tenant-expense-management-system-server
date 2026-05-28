@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import userRoutes from './routes/user.routes';
+import orgRoutes from './routes/org.routes';
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/users', userRoutes);
+app.use('/organisations', orgRoutes);
 
 const PORT = process.env.PORT ?? 3002;
 app.listen(PORT, () => {

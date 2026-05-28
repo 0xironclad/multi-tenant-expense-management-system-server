@@ -1,13 +1,21 @@
-import { Request, Response } from 'express';
-import { createProfileSchema } from '../schemas/user.schemas';
-import { findProfileByAuthUserId, createProfile, getMembershipsWithOrgs } from '../lib/user.lib';
+import { Request, Response } from "express";
+import { createProfileSchema } from "../schemas/user.schemas";
+import {
+  findProfileByAuthUserId,
+  createProfile,
+  getMembershipsWithOrgs,
+  createOrganisation,
+} from "../lib/user.lib";
 
-export const createUserProfile = async (req: Request, res: Response): Promise<void> => {
-  const authUserId = req.headers['x-user-id'] as string;
-  const email = req.headers['x-user-email'] as string;
+export const createUserProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const authUserId = req.headers["x-user-id"] as string;
+  const email = req.headers["x-user-email"] as string;
 
   if (!authUserId || !email) {
-    res.status(401).json({ error: 'Missing identity headers' });
+    res.status(401).json({ error: "Missing identity headers" });
     return;
   }
 
@@ -29,31 +37,63 @@ export const createUserProfile = async (req: Request, res: Response): Promise<vo
     const profile = await createProfile(authUserId, email, firstName, lastName);
     res.status(201).json(profile);
   } catch (err) {
-    console.error('Create profile error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Create profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
-export const getMyProfile = async (req: Request, res: Response): Promise<void> => {
-  const authUserId = req.headers['x-user-id'] as string;
+export const getMyProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const authUserId = req.headers["x-user-id"] as string;
 
   if (!authUserId) {
-    res.status(401).json({ error: 'Missing identity header' });
+    res.status(401).json({ error: "Missing identity header" });
     return;
   }
 
   try {
     const profile = await findProfileByAuthUserId(authUserId);
     if (!profile) {
-      res.status(404).json({ error: 'Profile not found' });
+      res.status(404).json({ error: "Profile not found" });
       return;
     }
 
     const memberships = await getMembershipsWithOrgs(profile.id);
     res.status(200).json({ ...profile, memberships });
   } catch (err) {
-    console.error('Get profile error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Get profile error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+
+export const createNewOrganisation = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const authUserId = req.headers["x-user-id"] as string;
+
+  if (!authUserId) {
+    res.status(401).json({ error: "Missing identity header" });
+    return;
+  }
+
+  const { name, slug } = req.body;
+  if (!name || !slug) {
+    res.status(400).json({ error: "name and slug are required" });
+    return;
+  }
+
+  try {
+    const org = await createOrganisation(name, slug, authUserId);
+    res.status(201).json(org);
+  } catch (err: any) {
+    if (err.code === "23505") {
+      res.status(409).json({ error: "Slug already in use" });
+      return;
+    }
+    console.error("Create organisation error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

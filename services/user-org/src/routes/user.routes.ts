@@ -5,5 +5,4 @@ const router = Router();
 
 router.post('/profile', createUserProfile);
 router.get('/me', getMyProfile);
-
 export default router;
