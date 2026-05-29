@@ -3,6 +3,7 @@ import express from 'express';
 import userRoutes from './routes/user.routes';
 import orgRoutes from './routes/org.routes';
 import internalRoutes from './routes/internal.routes';
+import { invitationRouter } from './routes/invitation.routes';
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/users', userRoutes);
 app.use('/organisations', orgRoutes);
+app.use('/invitations', invitationRouter);
 app.use('/internal', internalRoutes);
 
 const PORT = process.env.PORT ?? 3002;
