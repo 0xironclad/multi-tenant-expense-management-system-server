@@ -3,8 +3,10 @@ import express, { Request, Response } from "express";
 import { Socket } from "net";
 import rateLimit from "express-rate-limit";
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { apiReference } from "@scalar/express-api-reference";
 import { requestLogger } from "./middleware/logger";
 import { authMiddleware } from "./middleware/auth";
+import { openApiSpec } from "./openapi";
 
 const app = express();
 
@@ -59,6 +61,12 @@ app.use("/internal", (_req, res) => {
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok", service: "gateway" });
 });
+
+app.get("/openapi.json", (_req, res) => {
+  res.json(openApiSpec);
+});
+
+app.use("/docs", apiReference({ spec: { url: "/openapi.json" } }));
 
 app.use(authMiddleware);
 app.use('/api', proxy);
