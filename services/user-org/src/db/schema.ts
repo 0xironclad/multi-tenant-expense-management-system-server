@@ -36,5 +36,6 @@ export const invitations = pgTable('invitations', {
   token: text('token').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   acceptedAt: timestamp('accepted_at'),
+  rejectedAt: timestamp('rejected_at'),
   createdAt: timestamp('created_at').defaultNow(),
 });

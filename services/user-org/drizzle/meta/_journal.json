@@ -15,6 +15,13 @@
       "when": 1779967767445,
       "tag": "0001_nappy_silver_surfer",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1780013298427,
+      "tag": "0002_useful_nebula",
+      "breakpoints": true
     }
   ]
 }

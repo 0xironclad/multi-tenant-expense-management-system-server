@@ -11,6 +11,7 @@ import {
   hasPendingInvitation,
   findInvitationByToken,
   acceptInvitation,
+  rejectInvitation,
 } from "../lib/invitation.lib";
 import { publishEvent } from "../lib/queue";
 
@@ -130,6 +131,53 @@ export const getInvitationByToken = async (
   }
 };
 
+export const rejectInvitationUser = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const { token } = req.params;
+  const authUserId = req.headers["x-user-id"] as string;
+
+  if (!authUserId) {
+    res.status(401).json({ error: "Missing identity header" });
+    return;
+  }
+
+  try {
+    await rejectInvitation(token, authUserId);
+    res.status(200).json({ message: "Invitation rejected" });
+  } catch (err) {
+    if (err instanceof Error) {
+      switch (err.message) {
+        case "NOT_FOUND":
+          res.status(404).json({ error: "Invitation not found" });
+          return;
+        case "ALREADY_ACCEPTED":
+          res.status(400).json({ error: "Invitation has already been accepted" });
+          return;
+        case "ALREADY_REJECTED":
+          res.status(400).json({ error: "Invitation has already been rejected" });
+          return;
+        case "EXPIRED":
+          res.status(400).json({ error: "Invitation has expired" });
+          return;
+        case "PROFILE_NOT_FOUND":
+          res.status(404).json({ error: "User profile not found" });
+          return;
+        case "EMAIL_MISMATCH":
+          res.status(403).json({ error: "This invitation was sent to a different email address" });
+          return;
+        default:
+          console.error("Reject invitation error:", err);
+          res.status(500).json({ error: "Internal server error" });
+      }
+    } else {
+      console.error("Reject invitation error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+};
+
 export const acceptInvitationUser = async (
   req: Request,
   res: Response,
@@ -157,6 +205,9 @@ export const acceptInvitationUser = async (
           return;
         case "ALREADY_ACCEPTED":
           res.status(400).json({ error: "Invitation has already been accepted" });
+          return;
+        case "ALREADY_REJECTED":
+          res.status(400).json({ error: "Invitation has already been rejected" });
           return;
         case "EXPIRED":
           res.status(400).json({ error: "Invitation has expired" });

@@ -34,6 +34,7 @@ export const acceptInvitation = async (token: string, authUserId: string) => {
 
     if (!invitation) throw new Error('NOT_FOUND');
     if (invitation.acceptedAt) throw new Error('ALREADY_ACCEPTED');
+    if (invitation.rejectedAt) throw new Error('ALREADY_REJECTED');
     if (invitation.expiresAt < new Date()) throw new Error('EXPIRED');
 
     const [profile] = await tx
@@ -67,10 +68,38 @@ export const hasPendingInvitation = async (orgId: string, email: string): Promis
         eq(invitations.orgId, orgId),
         eq(invitations.email, email),
         isNull(invitations.acceptedAt),
+        isNull(invitations.rejectedAt),
         gt(invitations.expiresAt, new Date()),
       ),
     );
   return !!existing;
+};
+
+export const rejectInvitation = async (token: string, authUserId: string) => {
+  return db.transaction(async (tx) => {
+    const [invitation] = await tx
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+
+    if (!invitation) throw new Error('NOT_FOUND');
+    if (invitation.acceptedAt) throw new Error('ALREADY_ACCEPTED');
+    if (invitation.rejectedAt) throw new Error('ALREADY_REJECTED');
+    if (invitation.expiresAt < new Date()) throw new Error('EXPIRED');
+
+    const [profile] = await tx
+      .select()
+      .from(userProfiles)
+      .where(eq(userProfiles.authUserId, authUserId));
+
+    if (!profile) throw new Error('PROFILE_NOT_FOUND');
+    if (profile.email !== invitation.email) throw new Error('EMAIL_MISMATCH');
+
+    await tx
+      .update(invitations)
+      .set({ rejectedAt: new Date() })
+      .where(eq(invitations.token, token));
+  });
 };
 
 export const isAlreadyMember = async (orgId: string, email: string): Promise<boolean> => {
