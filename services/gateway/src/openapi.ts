@@ -381,6 +381,150 @@ export const openApiSpec = {
       },
     },
 
+    '/api/expenses': {
+      get: {
+        tags: ['Expenses'],
+        summary: 'List expenses',
+        description: 'Lists expenses for an org. EMPLOYEEs see only their own. MANAGERs/OWNERs see all. Supports cursor pagination.',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'orgId', in: 'query', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED'] } },
+          { name: 'submittedBy', in: 'query', description: 'Filter by submitter authUserId (MANAGER/OWNER only)', schema: { type: 'string' } },
+          { name: 'cursor', in: 'query', description: 'createdAt ISO timestamp of the last item from the previous page', schema: { type: 'string' } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', default: 20 } },
+        ],
+        responses: {
+          200: {
+            description: 'Paginated expense list',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    items: { type: 'array', items: { $ref: '#/components/schemas/Expense' } },
+                    nextCursor: { type: 'string', nullable: true, description: 'Pass as cursor in the next request to get the next page' },
+                  },
+                },
+              },
+            },
+          },
+          403: { description: 'Not a member', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+      post: {
+        tags: ['Expenses'],
+        summary: 'Create an expense',
+        description: 'Creates a new expense in DRAFT status. The caller must be a member of the specified org.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['orgId', 'title', 'amount'],
+                properties: {
+                  orgId: { type: 'string', format: 'uuid' },
+                  title: { type: 'string', example: 'Team lunch' },
+                  description: { type: 'string' },
+                  amount: { type: 'string', example: '49.99', description: 'Decimal string' },
+                  currency: { type: 'string', default: 'USD', example: 'USD' },
+                  receiptS3Key: { type: 'string', description: 'S3 object key from the file service presigned upload' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: 'Expense created in DRAFT status', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          403: { description: 'Not a member of the organisation', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/expenses/{id}/submit': {
+      post: {
+        tags: ['Expenses'],
+        summary: 'Submit expense for review',
+        description: 'Transitions DRAFT → PENDING. Only the submitter can call this.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          200: { description: 'Expense is now PENDING', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          400: { description: 'Invalid state transition', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Not the submitter', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/expenses/{id}/approve': {
+      post: {
+        tags: ['Expenses'],
+        summary: 'Approve expense',
+        description: 'Transitions PENDING → APPROVED. Requires MANAGER or OWNER role. Self-approval is blocked.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          200: { description: 'Expense is now APPROVED', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          400: { description: 'Invalid state transition', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Insufficient role or self-approval attempt', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/expenses/{id}/reject': {
+      post: {
+        tags: ['Expenses'],
+        summary: 'Reject expense',
+        description: 'Transitions PENDING → REJECTED. Requires MANAGER or OWNER role. A reason is mandatory.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['reason'],
+                properties: { reason: { type: 'string', example: 'Missing receipt' } },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Expense is now REJECTED', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          400: { description: 'Invalid state transition or missing reason', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Insufficient role', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/expenses/{id}/resubmit': {
+      post: {
+        tags: ['Expenses'],
+        summary: 'Resubmit rejected expense',
+        description: 'Transitions REJECTED → DRAFT so the submitter can edit and re-submit. Only the original submitter can call this.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          200: { description: 'Expense is back in DRAFT', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          400: { description: 'Expense is not REJECTED', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Not the submitter', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
     // ── Invitations ─────────────────────────────────────────────────────────────
 
     '/api/organisations/{orgId}/invitations': {
@@ -497,49 +641,20 @@ export const openApiSpec = {
         },
       },
     },
-    // ── Expenses ────────────────────────────────────────────────────────────────
-
-    '/api/expenses': {
-      post: {
+    '/api/expenses/{id}': {
+      get: {
         tags: ['Expenses'],
-        summary: 'Create an expense',
-        description: 'Creates a new expense in DRAFT status. The caller must be a member of the specified org.',
+        summary: 'Get expense by ID',
+        description: 'Returns a single expense. Caller must be a member of the org. EMPLOYEEs can only view their own expenses.',
         security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['orgId', 'title', 'amount'],
-                properties: {
-                  orgId: { type: 'string', format: 'uuid' },
-                  title: { type: 'string', example: 'Team lunch' },
-                  description: { type: 'string' },
-                  amount: { type: 'string', example: '49.99', description: 'Decimal string' },
-                  currency: { type: 'string', default: 'USD', example: 'USD' },
-                  receiptS3Key: { type: 'string', description: 'S3 object key from the file service presigned upload' },
-                },
-              },
-            },
-          },
-        },
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
         responses: {
-          201: {
-            description: 'Expense created in DRAFT status',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/Expense' },
-              },
-            },
-          },
-          403: { description: 'Not a member of the organisation', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          200: { description: 'Expense', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          403: { description: 'Not a member or EMPLOYEE viewing another\'s expense', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },
-    },
-
-    '/api/expenses/{id}': {
       patch: {
         tags: ['Expenses'],
         summary: 'Update an expense',
