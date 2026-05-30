@@ -117,6 +117,7 @@ services:
     environment:
       DATABASE_URL: ${EXPENSE_DATABASE_URL}
       SERVICE_NAME: expense
+      USER_ORG_SERVICE_URL: http://user-org:3002
     ports:
       - '3003:3003'
     depends_on:

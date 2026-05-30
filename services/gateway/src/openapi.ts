@@ -47,6 +47,26 @@ export const openApiSpec = {
           org: { $ref: '#/components/schemas/Organisation' },
         },
       },
+      Expense: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+          orgId: { type: 'string', format: 'uuid' },
+          submittedBy: { type: 'string', format: 'uuid', description: 'authUserId of the submitter' },
+          title: { type: 'string' },
+          description: { type: 'string', nullable: true },
+          amount: { type: 'string', description: 'Decimal string' },
+          currency: { type: 'string' },
+          status: { type: 'string', enum: ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED'] },
+          receiptS3Key: { type: 'string', nullable: true },
+          submittedAt: { type: 'string', format: 'date-time', nullable: true },
+          reviewedBy: { type: 'string', format: 'uuid', nullable: true },
+          reviewedAt: { type: 'string', format: 'date-time', nullable: true },
+          rejectionReason: { type: 'string', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
       Invitation: {
         type: 'object',
         properties: {
@@ -65,6 +85,7 @@ export const openApiSpec = {
     { name: 'Users', description: 'User profile management' },
     { name: 'Organisations', description: 'Create and manage organisations' },
     { name: 'Invitations', description: 'Invite members and accept/reject invitations' },
+    { name: 'Expenses', description: 'Expense CRUD and state machine (DRAFT → PENDING → APPROVED/REJECTED)' },
   ],
   paths: {
     // ── Auth ────────────────────────────────────────────────────────────────────
@@ -472,6 +493,80 @@ export const openApiSpec = {
           400: { description: 'Invitation expired or already accepted/rejected', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           403: { description: 'Email mismatch', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           404: { description: 'Invitation or profile not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    // ── Expenses ────────────────────────────────────────────────────────────────
+
+    '/api/expenses': {
+      post: {
+        tags: ['Expenses'],
+        summary: 'Create an expense',
+        description: 'Creates a new expense in DRAFT status. The caller must be a member of the specified org.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['orgId', 'title', 'amount'],
+                properties: {
+                  orgId: { type: 'string', format: 'uuid' },
+                  title: { type: 'string', example: 'Team lunch' },
+                  description: { type: 'string' },
+                  amount: { type: 'string', example: '49.99', description: 'Decimal string' },
+                  currency: { type: 'string', default: 'USD', example: 'USD' },
+                  receiptS3Key: { type: 'string', description: 'S3 object key from the file service presigned upload' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Expense created in DRAFT status',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Expense' },
+              },
+            },
+          },
+          403: { description: 'Not a member of the organisation', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/expenses/{id}': {
+      patch: {
+        tags: ['Expenses'],
+        summary: 'Update an expense',
+        description: 'Update expense fields. Only allowed when status is DRAFT or REJECTED. Only the original submitter can edit.',
+        security: [{ bearerAuth: [] }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        requestBody: {
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string' },
+                  description: { type: 'string' },
+                  amount: { type: 'string', description: 'Decimal string' },
+                  currency: { type: 'string' },
+                  receiptS3Key: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: 'Expense updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Expense' } } } },
+          400: { description: 'Expense is not in DRAFT or REJECTED status', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Not the submitter', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },
