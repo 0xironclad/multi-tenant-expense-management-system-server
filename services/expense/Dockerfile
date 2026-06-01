@@ -18,4 +18,4 @@ COPY services/expense/package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/services/expense/dist ./dist
 EXPOSE 3003
-CMD ["node", "dist/index.js"]
+CMD ["npx", "concurrently", "-n", "api,worker", "node dist/index.js", "node dist/workers/outbox-publisher.js"]

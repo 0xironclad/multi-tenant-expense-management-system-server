@@ -4,9 +4,10 @@
   "description": "Expense service — core domain, state machine, outbox pattern",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "concurrently -n api,worker -c blue,magenta \"ts-node-dev --respawn --transpile-only src/index.ts\" \"ts-node-dev --respawn --transpile-only src/workers/outbox-publisher.ts\"",
+    "dev:api": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "concurrently -n api,worker \"node dist/index.js\" \"node dist/workers/outbox-publisher.js\"",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@app/types": "file:../../packages/types",
     "amqplib": "^0.10.4",
+    "concurrently": "^9.1.2",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.10",
     "express": "^4.19.2",
