@@ -1,0 +1,15 @@
+# Override to test the file service against REAL S3 instead of MinIO.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.s3.yml up -d --build file
+#
+# No AWS keys live here. The container reads your existing local credentials via
+# the read-only ~/.aws mount — the same default credential chain that, in real
+# production on EC2, resolves an IAM role with no keys at all.
+services:
+  file:
+    environment:
+      S3_ENDPOINT: ""                          # empty → SDK targets real AWS S3
+      S3_BUCKET: expense-app-receipts-cole
+      AWS_REGION: eu-central-1
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro             # ambient creds, never copied/committed

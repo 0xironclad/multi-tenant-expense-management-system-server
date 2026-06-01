@@ -1,7 +1,9 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const endpoint = process.env.S3_ENDPOINT;
+// Empty string counts as unset, so an `S3_ENDPOINT=` override cleanly flips
+// the client to real AWS S3 (default credential chain → IAM role in prod).
+const endpoint = process.env.S3_ENDPOINT || undefined;
 const BUCKET = process.env.S3_BUCKET ?? 'receipts';
 const PRESIGN_EXPIRY_SECONDS = 5 * 60; // 5 minutes
 
