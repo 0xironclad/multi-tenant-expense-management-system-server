@@ -86,6 +86,7 @@ export const openApiSpec = {
     { name: 'Organisations', description: 'Create and manage organisations' },
     { name: 'Invitations', description: 'Invite members and accept/reject invitations' },
     { name: 'Expenses', description: 'Expense CRUD and state machine (DRAFT → PENDING → APPROVED/REJECTED)' },
+    { name: 'Files', description: 'Presigned URLs for direct receipt upload/download to S3 (MinIO locally)' },
   ],
   paths: {
     // ── Auth ────────────────────────────────────────────────────────────────────
@@ -682,6 +683,96 @@ export const openApiSpec = {
           400: { description: 'Expense is not in DRAFT or REJECTED status', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           403: { description: 'Not the submitter', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           404: { description: 'Expense not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/files/upload-url': {
+      post: {
+        tags: ['Files'],
+        summary: 'Request a presigned upload URL',
+        description:
+          'Returns a short-lived (5 min) presigned S3 PUT URL plus the generated s3Key. The client uploads the file **directly** to S3/MinIO with that URL — the bytes never pass through the server.\n\n' +
+          '**Flow:** call this → PUT the file to `uploadUrl` → pass the returned `s3Key` to the expense service as `receiptS3Key`.\n\n' +
+          '**Hint:** When uploading, set the request `Content-Type` to the same `mimeType` you sent here, or S3 will reject the signature. Allowed types: image/jpeg, image/png, application/pdf.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['filename', 'mimeType', 'orgId'],
+                properties: {
+                  filename: { type: 'string', example: 'receipt.pdf' },
+                  mimeType: { type: 'string', enum: ['image/jpeg', 'image/png', 'application/pdf'], example: 'application/pdf' },
+                  orgId: { type: 'string', format: 'uuid' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Presigned upload URL',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    uploadUrl: { type: 'string', description: 'Presigned S3 PUT URL (expires in 5 min)' },
+                    s3Key: { type: 'string', example: 'receipts/{orgId}/{uuid}-receipt.pdf' },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'Missing fields or unsupported mime type', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          403: { description: 'Not a member of the organisation', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+
+    '/api/files/download-url': {
+      post: {
+        tags: ['Files'],
+        summary: 'Request a presigned download URL',
+        description:
+          'Returns a short-lived (5 min) presigned S3 GET URL for viewing a receipt. The caller must belong to the org that owns the file.\n\n' +
+          '**Why POST, not GET:** the `s3Key` contains slashes which would break path-based routing, so it travels in the request body.',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['s3Key'],
+                properties: {
+                  s3Key: { type: 'string', example: 'receipts/{orgId}/{uuid}-receipt.pdf' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Presigned download URL',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    downloadUrl: { type: 'string', description: 'Presigned S3 GET URL (expires in 5 min)' },
+                  },
+                },
+              },
+            },
+          },
+          403: { description: 'Caller is not a member of the file\'s organisation', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          404: { description: 'File not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },

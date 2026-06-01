@@ -148,6 +148,11 @@ services:
     environment:
       DATABASE_URL: ${FILE_DATABASE_URL}
       SERVICE_NAME: file
+      # S3_ENDPOINT comes from .env (http://localhost:9000). The file service only
+      # *signs* URLs (a local computation) — it never connects to S3/MinIO itself.
+      # The signed host is baked into the SigV4 signature, so it must be reachable
+      # by the CLIENT that uses the URL, not by this container.
+      USER_ORG_SERVICE_URL: http://user-org:3002
     ports:
       - '3005:3005'
     depends_on:
