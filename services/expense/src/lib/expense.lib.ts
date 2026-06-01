@@ -1,5 +1,7 @@
+import { randomUUID } from "crypto";
 import { and, desc, eq, lt } from "drizzle-orm";
-import { db, expenses } from "../db";
+import { EventType } from "@app/types";
+import { db, expenses, outbox } from "../db";
 
 export const createExpense = async (data: {
   orgId: string;
@@ -40,17 +42,34 @@ export const submitExpense = async (id: string) => {
 };
 
 export const approveExpense = async (id: string, reviewedBy: string) => {
-  const [expense] = await db
-    .update(expenses)
-    .set({
-      status: "APPROVED",
-      reviewedBy,
-      reviewedAt: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(expenses.id, id))
-    .returning();
-  return expense;
+  return db.transaction(async (tx) => {
+    const [expense] = await tx
+      .update(expenses)
+      .set({
+        status: "APPROVED",
+        reviewedBy,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(expenses.id, id))
+      .returning();
+
+    await tx.insert(outbox).values({
+      eventType: EventType.EXPENSE_APPROVED,
+      payload: {
+        eventId: randomUUID(),
+        type: EventType.EXPENSE_APPROVED,
+        expenseId: expense.id,
+        submittedBy: expense.submittedBy,
+        orgId: expense.orgId,
+        amount: expense.amount,
+        currency: expense.currency,
+        occurredAt: new Date().toISOString(),
+      },
+    });
+
+    return expense;
+  });
 };
 
 export const rejectExpense = async (
@@ -58,18 +77,34 @@ export const rejectExpense = async (
   reviewedBy: string,
   reason: string,
 ) => {
-  const [expense] = await db
-    .update(expenses)
-    .set({
-      status: "REJECTED",
-      reviewedBy,
-      reviewedAt: new Date(),
-      rejectionReason: reason,
-      updatedAt: new Date(),
-    })
-    .where(eq(expenses.id, id))
-    .returning();
-  return expense;
+  return db.transaction(async (tx) => {
+    const [expense] = await tx
+      .update(expenses)
+      .set({
+        status: "REJECTED",
+        reviewedBy,
+        reviewedAt: new Date(),
+        rejectionReason: reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(expenses.id, id))
+      .returning();
+
+    await tx.insert(outbox).values({
+      eventType: EventType.EXPENSE_REJECTED,
+      payload: {
+        eventId: randomUUID(),
+        type: EventType.EXPENSE_REJECTED,
+        expenseId: expense.id,
+        submittedBy: expense.submittedBy,
+        orgId: expense.orgId,
+        reason,
+        occurredAt: new Date().toISOString(),
+      },
+    });
+
+    return expense;
+  });
 };
 
 export const resubmitExpense = async (id: string) => {
