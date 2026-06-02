@@ -134,11 +134,14 @@ services:
     environment:
       DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
       SERVICE_NAME: notification
+      USER_ORG_SERVICE_URL: http://user-org:3002
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      user-org:
+        condition: service_started
 
   file:
     build:
