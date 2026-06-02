@@ -17,6 +17,8 @@ export const handleEvent = async (event: AppEvent): Promise<void> => {
         firstName: user.firstName,
         amount: event.amount,
         currency: event.currency,
+        expenseId: event.expenseId,
+        occurredAt: event.occurredAt,
       });
       await sendEmail({ to: user.email, subject, html });
       break;
@@ -27,6 +29,8 @@ export const handleEvent = async (event: AppEvent): Promise<void> => {
       const { subject, html } = expenseRejectedEmail({
         firstName: user.firstName,
         reason: event.reason,
+        expenseId: event.expenseId,
+        occurredAt: event.occurredAt,
       });
       await sendEmail({ to: user.email, subject, html });
       break;
