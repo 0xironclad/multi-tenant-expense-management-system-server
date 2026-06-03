@@ -15,6 +15,9 @@
   },
   "dependencies": {
     "@app/types": "file:../../packages/types",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.6.1",

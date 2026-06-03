@@ -15,6 +15,9 @@
   },
   "dependencies": {
     "@app/types": "file:../../packages/types",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "amqplib": "^2.0.1",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.10",

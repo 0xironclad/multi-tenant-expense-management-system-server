@@ -89,6 +89,7 @@ services:
     environment:
       DATABASE_URL: ${AUTH_DATABASE_URL}
       SERVICE_NAME: auth
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - '3001:3001'
     depends_on:
@@ -103,6 +104,7 @@ services:
     environment:
       DATABASE_URL: ${USER_ORG_DATABASE_URL}
       SERVICE_NAME: user-org
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - '3002:3002'
     depends_on:
@@ -118,6 +120,7 @@ services:
       DATABASE_URL: ${EXPENSE_DATABASE_URL}
       SERVICE_NAME: expense
       USER_ORG_SERVICE_URL: http://user-org:3002
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     ports:
       - '3003:3003'
     depends_on:
@@ -135,6 +138,7 @@ services:
       DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
       SERVICE_NAME: notification
       USER_ORG_SERVICE_URL: http://user-org:3002
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,6 +155,7 @@ services:
     environment:
       DATABASE_URL: ${FILE_DATABASE_URL}
       SERVICE_NAME: file
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
       # S3_ENDPOINT comes from .env (http://localhost:9000). The file service only
       # *signs* URLs (a local computation) — it never connects to S3/MinIO itself.
       # The signed host is baked into the SigV4 signature, so it must be reachable
@@ -169,6 +174,7 @@ services:
     env_file: .env
     environment:
       SERVICE_NAME: gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
       AUTH_SERVICE_URL: http://auth:3001
       USER_ORG_SERVICE_URL: http://user-org:3002
       EXPENSE_SERVICE_URL: http://expense:3003

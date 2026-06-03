@@ -1,3 +1,4 @@
+import './tracing';
 import 'dotenv/config';
 import express from 'express';
 import fileRoutes from './routes/file.routes';
