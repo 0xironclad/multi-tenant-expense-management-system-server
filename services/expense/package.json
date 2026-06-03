@@ -16,6 +16,9 @@
   },
   "dependencies": {
     "@app/types": "file:../../packages/types",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "amqplib": "^0.10.4",
     "concurrently": "^9.1.2",
     "dotenv": "^16.4.5",

@@ -1,3 +1,4 @@
+import "./tracing";
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import { Socket } from "net";

@@ -1,3 +1,4 @@
+import './tracing';
 import 'dotenv/config';
 import amqplib from 'amqplib';
 import type { AppEvent } from '@app/types';

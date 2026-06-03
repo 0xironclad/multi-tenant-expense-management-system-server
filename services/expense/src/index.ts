@@ -1,3 +1,4 @@
+import './tracing';
 import 'dotenv/config';
 import express from 'express';
 import expenseRoutes from './routes/expense.routes';
