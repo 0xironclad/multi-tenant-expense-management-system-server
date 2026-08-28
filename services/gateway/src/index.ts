@@ -2,6 +2,7 @@ import "./tracing";
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import { Socket } from "net";
+import cors from "cors";
 import rateLimit from "express-rate-limit";
 import { createProxyMiddleware } from "http-proxy-middleware";
 import { apiReference } from "@scalar/express-api-reference";
@@ -68,6 +69,13 @@ app.get("/openapi.json", (_req, res) => {
 });
 
 app.use("/docs", apiReference({ spec: { url: "/openapi.json" } }));
+
+// CORS must run before authMiddleware so it can answer preflight OPTIONS
+// requests itself (the auth middleware would reject them with 401). Origins:
+// CLIENT_URL plus the client's dev port — the gateway owns 3000, so the Next
+// dev server usually runs elsewhere (e.g. 3004).
+const CLIENT_ORIGIN = process.env.CLIENT_URL ?? "http://localhost:3000";
+app.use(cors({ origin: [CLIENT_ORIGIN, "http://localhost:3004"] }));
 
 app.use(authMiddleware);
 app.use('/api', proxy);
