@@ -1,0 +1,12 @@
+{
+  "name": "expense-management-monorepo",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.12"
+  }
+}
